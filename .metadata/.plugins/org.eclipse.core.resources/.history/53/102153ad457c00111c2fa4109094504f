@@ -1,5 +1,0 @@
-package com.rishi.classroom.model;
-
-public enum MeetingStatus {
-	SC
-}

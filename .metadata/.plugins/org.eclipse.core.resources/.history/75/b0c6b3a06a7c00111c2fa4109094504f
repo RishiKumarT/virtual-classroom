@@ -1,9 +1,0 @@
-package com.rishi.classroom.model;
-
-import jakarta.persistence.Entity;
-
-@Entity
-@Table()
-public class MeetingParticipants {
-
-}
