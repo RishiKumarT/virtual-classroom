@@ -1,0 +1,11 @@
+package com.rishi.classroom.model;
+
+import jakarta.persistence.Entity;
+
+@Entity
+
+public class Announcement {
+	
+	private Long id;
+	
+}

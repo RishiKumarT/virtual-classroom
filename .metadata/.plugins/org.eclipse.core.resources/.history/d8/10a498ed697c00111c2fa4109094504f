@@ -1,0 +1,7 @@
+package com.rishi.classroom.model;
+
+@Entity
+@Table(name="meetings")
+public class Meeting {
+
+}

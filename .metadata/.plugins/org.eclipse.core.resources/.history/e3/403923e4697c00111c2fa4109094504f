@@ -1,0 +1,5 @@
+package com.rishi.classroom.model;
+
+public class Meeting {
+
+}

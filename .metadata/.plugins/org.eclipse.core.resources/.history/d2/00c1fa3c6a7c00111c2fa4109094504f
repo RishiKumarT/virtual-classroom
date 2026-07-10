@@ -1,0 +1,24 @@
+package com.rishi.classroom.model;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="meetings")
+public class Meeting {
+	
+	private Long id;
+	private Room room;
+	private User createdBy;
+	private String title;
+	private LocalDateTime scheduledStartTime;
+
+    private LocalDateTime scheduledEndTime;
+
+    private LocalDateTime actualStartTime;
+
+    private LocalDateTime actualEndTime;
+	
+}

@@ -1,0 +1,26 @@
+package com.rishi.classroom.model;
+
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+
+@Entity
+@Table(name="room_members")
+@Getter
+public class RoomMember {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	private Long room_id;
+	private Long user_id;
+	private Enum role;
+	private boolean isMutedInChat;
+	private boolean isBlocked;
+	private LocalDateTime joined_at;
+	
+}

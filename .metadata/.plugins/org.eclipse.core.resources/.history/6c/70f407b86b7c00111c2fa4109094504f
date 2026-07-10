@@ -1,0 +1,12 @@
+package com.rishi.classroom.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="room_chat_messages")
+public class RoomChatMessage {
+	
+	private Long id;
+	
+}

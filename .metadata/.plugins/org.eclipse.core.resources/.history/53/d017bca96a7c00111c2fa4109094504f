@@ -1,0 +1,11 @@
+package com.rishi.classroom.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="meetingparticipants")
+public class MeetingParticipants {
+
+	
+}

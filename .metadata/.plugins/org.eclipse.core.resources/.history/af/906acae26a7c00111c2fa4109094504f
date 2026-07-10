@@ -1,0 +1,23 @@
+package com.rishi.classroom.model;
+
+import java.time.LocalDateTime;
+
+import org.springframework.cglib.core.Local;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="meetingparticipants")
+public class MeetingParticipants {
+
+	@Id
+	@GeneratedValue(strategy = )
+	private Long id;
+	private Meeting meeting;
+	private User user;
+	private LocalDateTime joinedTime;
+	private LocalDateTime leftTime;
+}

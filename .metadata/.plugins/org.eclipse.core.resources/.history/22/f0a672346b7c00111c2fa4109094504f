@@ -1,0 +1,15 @@
+package com.rishi.classroom.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="meetingchatmessage")
+public class MeetingChatMessage {
+	
+	private Long id;
+	private Meeting meeting;
+	private User sender;
+	private String message;
+	private LocalDateTime sentAt;
+}
