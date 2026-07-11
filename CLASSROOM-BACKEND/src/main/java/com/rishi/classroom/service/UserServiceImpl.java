@@ -15,7 +15,8 @@ import com.rishi.classroom.repository.UserRepository;
 public class UserServiceImpl implements UserService {
 
 
-	//BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
 	
 	@Autowired
 	private UserRepository userRepository;
@@ -26,7 +27,7 @@ public class UserServiceImpl implements UserService {
 		User user=User.builder()
 					  .name(request.getName())
 					  .email(request.getEmail())
-					  .password(request.getPassword())
+					  .password(passwordEncoder.encode(request.getPassword()))
 					  .createdAt(LocalDateTime.now())
 					  .updatedAt(LocalDateTime.now())
 					  .build();
@@ -40,7 +41,7 @@ public class UserServiceImpl implements UserService {
 		
 		User user = userRepository.findByEmail(request.getEmail())
 								  .orElseThrow(()->new Exception("Invalid email or password"));
-		if(!user.getPassword().equals(request.getPassword())) throw new Exception("Invalid email or password");
+		if(!passwordEncoder.matches(request.getPassword(), user.getPassword())) throw new Exception("Invalid email or password");
 		
 		return mapToResponse(user);
 	}
