@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.rishi.classroom.dto.CreateRoomRequest;
-import com.rishi.classroom.dto.JoinRoomRequest;
 import com.rishi.classroom.dto.RoomResponse;
 import com.rishi.classroom.dto.UpdateRoomRequest;
 import com.rishi.classroom.model.Room;
@@ -187,5 +186,10 @@ public class RoomServiceImpl implements RoomService {
 				           .ownerId(room.getOwner().getId())
 					       .build();
 	}
+
+
+
+
+
 
 }

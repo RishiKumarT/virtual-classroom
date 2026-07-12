@@ -19,10 +19,7 @@ public interface RoomService {
 	
 	String deleteRoom(Long roomId, Long userId);
 	
-	
 	List<RoomResponse> getRoomsByUser(Long userId);
-	
-	
 	
 	
 	
