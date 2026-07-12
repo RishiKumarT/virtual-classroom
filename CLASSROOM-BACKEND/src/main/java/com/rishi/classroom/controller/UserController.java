@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.rishi.classroom.dto.LoginRequest;
 import com.rishi.classroom.dto.RegisterRequest;
 import com.rishi.classroom.dto.UserResponse;
-import com.rishi.classroom.service.UserServiceImpl;
+import com.rishi.classroom.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 	
 	@Autowired
-	private UserServiceImpl userService;
+	private UserService userService;
 	
 	@GetMapping("/")
 	public String working() {

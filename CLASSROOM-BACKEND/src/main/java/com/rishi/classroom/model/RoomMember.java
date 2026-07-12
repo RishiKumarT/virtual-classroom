@@ -45,6 +45,6 @@ public class RoomMember {
 	
 	private boolean isBlocked;
 	
-	private LocalDateTime joined_at;
+	private LocalDateTime joinedAt;
 	
 }

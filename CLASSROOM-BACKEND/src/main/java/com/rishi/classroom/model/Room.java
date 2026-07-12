@@ -40,7 +40,7 @@ public class Room {
 	private User owner;
 
 	@Column(nullable = false, unique=true, length=8)
-	private Long inviteCode;
+	private String inviteCode;
 	
 	private boolean isPrivate;
 	
