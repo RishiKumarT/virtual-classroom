@@ -50,4 +50,6 @@ public class Meeting {
 	
     @Enumerated(EnumType.STRING)
     private MeetingStatus status;
+    
+    private LocalDateTime createdAt;
 }
