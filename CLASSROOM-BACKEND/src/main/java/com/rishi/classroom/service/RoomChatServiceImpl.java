@@ -1,10 +1,12 @@
 package com.rishi.classroom.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.rishi.classroom.dto.RoomChatMessageRequest;
 import com.rishi.classroom.dto.RoomChatMessageResponse;
 import com.rishi.classroom.model.Room;
 import com.rishi.classroom.model.RoomChatMessage;
@@ -50,6 +52,38 @@ public class RoomChatServiceImpl implements RoomChatService{
 	            .map(this::mapToResponse)
 	            .toList();
 	}
+	
+	
+	
+	@Override
+	public RoomChatMessageResponse sendMessage(RoomChatMessageRequest request) {
+		Room room = roomRepository.findById(request.getRoomId())
+								  .orElseThrow(()-> new RuntimeException("Invalid Room"));
+		User user = userRepository.findById(request.getSenderId())
+								  .orElseThrow(()-> new RuntimeException("Invalid Room"));
+		
+		RoomMember member = roomMemberRepository.findByRoomAndUser(room, user)
+												.orElseThrow(()-> new RuntimeException("Invalid Room or user"));
+		if(member.isBlocked()) {
+			throw new RuntimeException("You are blocked");
+		}
+		
+		if(member.isMutedInChat()) {
+			throw new RuntimeException("You are muted in chat");
+		}
+		
+		if(!room.isChatEnabled())throw new RuntimeException("Room chat is not enabled");
+		
+		RoomChatMessage message = RoomChatMessage.builder()
+												 .room(room)
+												 .sender(user)
+												 .message(request.getMessage())
+												 .sentAt(LocalDateTime.now())
+											     .build();
+		roomChatMessageRepository.save(message);
+		
+		return mapToResponse(message);
+	}
 
 	private RoomChatMessageResponse mapToResponse(
 	        RoomChatMessage message)
@@ -73,4 +107,6 @@ public class RoomChatServiceImpl implements RoomChatService{
 
 	    return response;
 	}
+
+	
 }
