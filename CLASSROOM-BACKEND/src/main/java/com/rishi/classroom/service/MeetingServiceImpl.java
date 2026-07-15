@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.rishi.classroom.dto.Meeting.CreateMeetingRequest;
@@ -21,6 +22,8 @@ import com.rishi.classroom.repository.RoomMemberRepository;
 import com.rishi.classroom.repository.RoomRepository;
 import com.rishi.classroom.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
 public class MeetingServiceImpl implements MeetingService{
 
@@ -35,6 +38,9 @@ public class MeetingServiceImpl implements MeetingService{
 	
 	@Autowired
 	private MeetingRepository meetingRepository;
+	
+	@Autowired
+	private SimpMessagingTemplate messagingTemplate;
 	
 	@Override
 	public MeetingResponse createMeeting(Long roomId, Long userId, CreateMeetingRequest request) {
@@ -130,7 +136,7 @@ public class MeetingServiceImpl implements MeetingService{
 	    }
 
 	    meetingRepository.save(meeting);
-
+	    
 	    return mapToResponse(meeting);
 	}
 
@@ -170,6 +176,8 @@ public class MeetingServiceImpl implements MeetingService{
 	    meeting.setActualStartTime(LocalDateTime.now());
 
 	    meetingRepository.save(meeting);
+	    
+	    broadcastMeetingStatus(meeting);
 
 	    return mapToResponse(meeting);
 	}
@@ -192,6 +200,8 @@ public class MeetingServiceImpl implements MeetingService{
 	    
 	    meetingRepository.save(meeting);
 
+	    broadcastMeetingStatus(meeting);
+	    
 	    return mapToResponse(meeting);
 	}
 
@@ -231,6 +241,8 @@ public class MeetingServiceImpl implements MeetingService{
 	    meeting.setStatus(MeetingStatus.CANCELLED);
 
 	    meetingRepository.save(meeting);
+	    
+	    broadcastMeetingStatus(meeting);
 
 	    return mapToResponse(meeting);
 	}
@@ -278,6 +290,19 @@ public class MeetingServiceImpl implements MeetingService{
 	    	throw new RuntimeException("Meeting is not live");
 	    }
 	}
+	
+	
+	private void broadcastMeetingStatus(Meeting meeting){
+	    MeetingStatusResponse response = MeetingStatusResponse.builder()
+	                    									  .meetingId(meeting.getId())
+	                    									  .status(meeting.getStatus())
+	                    									  .actualStartTime(meeting.getActualStartTime())
+	                    									  .build();
+
+	    messagingTemplate.convertAndSend("/topic/meeting/status/"+ meeting.getId(),response);
+	    
+	}
+	
 	
 	private MeetingResponse mapToResponse(Meeting meeting)
 	{
