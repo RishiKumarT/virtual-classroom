@@ -299,7 +299,7 @@ public class MeetingServiceImpl implements MeetingService{
 	                    									  .actualStartTime(meeting.getActualStartTime())
 	                    									  .build();
 
-	    messagingTemplate.convertAndSend("/topic/meeting/status/"+ meeting.getId(),response);
+	    messagingTemplate.convertAndSend("/topic/rooms/"+meeting.getRoom().getId()+"/meetings", response);
 	    
 	}
 	
