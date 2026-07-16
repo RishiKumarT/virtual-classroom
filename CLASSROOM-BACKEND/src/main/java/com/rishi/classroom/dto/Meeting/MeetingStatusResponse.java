@@ -17,5 +17,5 @@ public class MeetingStatusResponse {
 	
 	private LocalDateTime actualStartTime;
 	
-	 private LocalDateTime actualEndTime;
+	private LocalDateTime actualEndTime;
 }
