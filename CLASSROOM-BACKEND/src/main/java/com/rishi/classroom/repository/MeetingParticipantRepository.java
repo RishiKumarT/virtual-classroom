@@ -20,4 +20,7 @@ public interface MeetingParticipantRepository extends JpaRepository<MeetingParti
     Optional<MeetingParticipant> findTopByMeetingAndUserOrderByJoinedTimeDesc(Meeting meeting, User user);
     
     List<MeetingParticipant> findByMeetingAndLeftTimeIsNull(Meeting meeting);
+    
+    // for attendance
+    List<MeetingParticipant>findByMeetingOrderByJoinedTimeAsc(Meeting meeting);
 }

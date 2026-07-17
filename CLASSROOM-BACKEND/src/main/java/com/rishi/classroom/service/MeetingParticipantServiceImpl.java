@@ -5,14 +5,19 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.rishi.classroom.dto.Meeting.AttendanceResponse;
+import com.rishi.classroom.dto.Meeting.MeetingParticipantEvent;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
 import com.rishi.classroom.model.Meeting;
 import com.rishi.classroom.model.MeetingParticipant;
 import com.rishi.classroom.model.MeetingStatus;
+import com.rishi.classroom.model.ParticipantEventType;
 import com.rishi.classroom.model.Room;
 import com.rishi.classroom.model.RoomMember;
+import com.rishi.classroom.model.RoomRole;
 import com.rishi.classroom.model.User;
 import com.rishi.classroom.repository.MeetingParticipantRepository;
 import com.rishi.classroom.repository.MeetingRepository;
@@ -33,6 +38,9 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	
 	@Autowired
 	private RoomMemberRepository roomMemberRepository;
+	
+	@Autowired
+	private SimpMessagingTemplate messagingTemplate;
 	
 	@Override
 	public MeetingParticipantResponse joinMeeting(Long meetingId, Long userId) {
@@ -64,6 +72,8 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	                    								   .build();
 
 	    meetingParticipantRepository.save(participant);
+	    
+	    broadcastParticipantEvent(ParticipantEventType.JOINED, meeting, user);
 
 	    return mapToResponse(participant);
 	}
@@ -88,6 +98,8 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	    participant.setLeftTime(LocalDateTime.now());
 
 	    meetingParticipantRepository.save(participant);
+	    
+	    broadcastParticipantEvent(ParticipantEventType.LEFT, meeting, user);
 
 	    return mapToResponse(participant);
 	    
@@ -130,6 +142,75 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	}
 
 	
+	
+	// for attendance
+	@Override
+	public List<AttendanceResponse> getAttendance(Long meetingId, Long userId){
+	    Meeting meeting = meetingRepository.findById(meetingId)
+	    							       .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+	    User user = userRepository.findById(userId)
+	    						  .orElseThrow(() ->new RuntimeException("User not found"));
+
+	    validateOwner(meeting.getRoom(), user);
+
+	    return meetingParticipantRepository.findByMeetingOrderByJoinedTimeAsc(meeting)
+	            						   .stream()
+	            						   .map(this::mapToAttendanceResponse)
+	            						   .toList();
+	}
+	
+	// for kicking a participant from the meeting
+	@Override
+	public void kickParticipant(Long meetingId, Long ownerId, Long participantUserId)
+	{
+	    Meeting meeting = meetingRepository.findById(meetingId)
+	                    				   .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+	    User owner = userRepository.findById(ownerId)
+	    						   .orElseThrow(() ->new RuntimeException("Owner not found"));
+
+	    User participantUser = userRepository.findById(participantUserId)
+	                    					 .orElseThrow(() ->new RuntimeException("Participant not found"));
+
+	    validateOwner(meeting.getRoom(),owner);
+
+	    if(meeting.getStatus() != MeetingStatus.LIVE){
+	        throw new RuntimeException("Meeting is not live");
+	    }
+
+	    MeetingParticipant participant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, participantUser)
+	                    											 .orElseThrow(() ->new RuntimeException("User is not in meeting"));
+
+	    if(participant.getLeftTime() != null){
+	        throw new RuntimeException("User is not currently in meeting");
+	    }
+
+	    participant.setLeftTime(LocalDateTime.now());
+
+	    meetingParticipantRepository.save(participant);
+
+	    broadcastParticipantEvent(ParticipantEventType.KICKED, meeting, participantUser);
+	}
+	
+	private AttendanceResponse mapToAttendanceResponse(MeetingParticipant participant){
+	    
+		Long durationMinutes = null;
+
+	    if(participant.getLeftTime() != null){
+	        durationMinutes = java.time.Duration.between(participant.getJoinedTime(),participant.getLeftTime()).toMinutes();
+	    }
+
+	    return AttendanceResponse.builder()
+	            				 .userId(participant.getUser().getId())
+	            				 .userName(participant.getUser().getName())
+	            				 .joinedTime(participant.getJoinedTime())
+	            				 .leftTime(participant.getLeftTime())
+	            				 .durationMinutes(durationMinutes)
+	            				 .build();
+	}
+	
+	
 	private MeetingParticipantResponse mapToResponse(MeetingParticipant participant){
 	    return MeetingParticipantResponse .builder()
 	    								  .id(participant.getId())
@@ -152,7 +233,28 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	    return roomMember;
 	}
 
-	
-	
+	private RoomMember validateOwner(Room room,User user){
+	    RoomMember roomMember = roomMemberRepository.findByRoomAndUser(room, user)
+	                    							.orElseThrow(() ->new RuntimeException("Not a room member"));
 
+	    if(roomMember.getRole() != RoomRole.OWNER){
+	        throw new RuntimeException(
+	                "Only owner can perform this action");
+	    }
+
+	    return roomMember;
+	}
+
+	
+	private void broadcastParticipantEvent(ParticipantEventType type, Meeting meeting, User user){
+	    MeetingParticipantEvent event = MeetingParticipantEvent.builder()
+	                    									   .type(type)
+	                    									   .meetingId(meeting.getId())
+	                    									   .userId(user.getId())
+	                    									   .userName(user.getName())
+	                    									   .build();
+
+	    messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId()+"/participant-events",event);
+	}
+	
 }
