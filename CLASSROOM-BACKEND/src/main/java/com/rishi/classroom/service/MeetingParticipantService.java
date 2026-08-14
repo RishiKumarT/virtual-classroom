@@ -2,11 +2,15 @@ package com.rishi.classroom.service;
 
 import java.util.List;
 
+import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
 
 public interface MeetingParticipantService {
-	MeetingParticipantResponse joinMeeting(Long meetingId, Long userId);
+	
+	JoinMeetingResponse joinMeeting(Long meetingId, Long userId);
+    
+    MeetingParticipantResponse connectedToMeeting(Long meetingId, Long userId);
 
     MeetingParticipantResponse leaveMeeting(Long meetingId, Long userId);
     

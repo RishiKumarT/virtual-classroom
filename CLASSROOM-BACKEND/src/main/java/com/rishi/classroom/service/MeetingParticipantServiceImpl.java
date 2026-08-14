@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantEvent;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
@@ -42,42 +43,65 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
 	
-	@Override
-	public MeetingParticipantResponse joinMeeting(Long meetingId, Long userId) {
+	@Autowired
+	private LiveKitService liveKitService;
+	
+
+	@Override 
+	public JoinMeetingResponse joinMeeting(Long meetingId, Long userId){
 		
-		Meeting meeting =meetingRepository.findById(meetingId)
-	                    				  .orElseThrow(() -> new RuntimeException("Meeting not found"));
-
-	    User user = userRepository.findById(userId)
-	    					      .orElseThrow(() -> new RuntimeException("User not found"));
-
-	    validateMember(meeting.getRoom(), user);
-
-	    if(meeting.getStatus()!= MeetingStatus.LIVE){
-	        throw new RuntimeException(
-	                "Meeting is not live");
-	    }
-
-	    Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user);
-
-	    if(latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null){
-	        throw new RuntimeException(
-	                "User already joined");
-	    }
-
-	    MeetingParticipant participant = MeetingParticipant.builder()
-	                    								   .meeting(meeting)
-	                    								   .user(user)
-	                    								   .joinedTime(LocalDateTime.now())
-	                    								   .build();
-
-	    meetingParticipantRepository.save(participant);
-	    
-	    broadcastParticipantEvent(ParticipantEventType.JOINED, meeting, user);
-
-	    return mapToResponse(participant);
+		Meeting meeting = meetingRepository.findById(meetingId) 
+										   .orElseThrow(() -> new RuntimeException("Meeting not found")); 
+		
+		User user = userRepository.findById(userId) 
+							      .orElseThrow(() -> new RuntimeException("User not found")); 
+		
+		validateMember(meeting.getRoom(), user);
+		
+		if (meeting.getStatus() != MeetingStatus.LIVE){ 
+			throw new RuntimeException("Meeting is not live");
+		} 
+		
+		return liveKitService.generateToken(user.getId(), user.getName(), "meeting-" + meeting.getId()); 
 	}
-
+	
+	
+	
+	@Override 
+	public MeetingParticipantResponse connectedToMeeting(Long meetingId, Long userId) {
+		
+		Meeting meeting = meetingRepository.findById(meetingId) 
+										   .orElseThrow(() ->new RuntimeException("Meeting not found"));
+		
+		User user =userRepository.findById(userId) 
+								 .orElseThrow(() ->new RuntimeException("User not found")); 
+		
+		validateMember(meeting.getRoom(),user);
+		
+		if (meeting.getStatus() != MeetingStatus.LIVE){
+			throw new RuntimeException("Meeting is not live");
+		}
+		
+		Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user); 
+		
+		if (latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null){
+			throw new RuntimeException("User is already connected to the meeting");
+		}
+		
+		MeetingParticipant participant =MeetingParticipant.builder() 
+													   	  .meeting(meeting)
+														  .user(user) 
+														  .joinedTime(LocalDateTime.now())
+														  .leftTime(null) 
+														  .build();
+		meetingParticipantRepository.save(participant);
+		
+		broadcastParticipantEvent(ParticipantEventType.JOINED, meeting, user);
+		
+		return mapToParticipantResponse(participant);
+	}
+	
+	
 	@Override
 	public MeetingParticipantResponse leaveMeeting(Long meetingId, Long userId) {
 		
@@ -124,8 +148,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	}
 	
 	@Override
-	public List<MeetingParticipantResponse> getActiveParticipants(Long meetingId, Long userId)
-	{
+	public List<MeetingParticipantResponse> getActiveParticipants(Long meetingId, Long userId){
 	    Meeting meeting = meetingRepository.findById(meetingId)
 	    								   .orElseThrow(() ->new RuntimeException("Meeting not found"));
 
@@ -162,8 +185,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	
 	// for kicking a participant from the meeting
 	@Override
-	public void kickParticipant(Long meetingId, Long ownerId, Long participantUserId)
-	{
+	public void kickParticipant(Long meetingId, Long ownerId, Long participantUserId){
 	    Meeting meeting = meetingRepository.findById(meetingId)
 	                    				   .orElseThrow(() ->new RuntimeException("Meeting not found"));
 
@@ -255,6 +277,18 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	                    									   .build();
 
 	    messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId()+"/participant-events",event);
+	}
+	
+	
+	private MeetingParticipantResponse mapToParticipantResponse(MeetingParticipant participant){
+	    return MeetingParticipantResponse.builder()
+							             .id(participant.getId())
+							             .meetingId(participant.getMeeting().getId())
+							             .userId(participant.getUser().getId())
+							             .userName(participant.getUser().getName())
+							             .joinedTime(participant.getJoinedTime())
+							             .leftTime(participant.getLeftTime())
+							             .build();
 	}
 	
 }
