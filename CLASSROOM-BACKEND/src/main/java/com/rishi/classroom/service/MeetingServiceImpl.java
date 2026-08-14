@@ -22,8 +22,6 @@ import com.rishi.classroom.repository.RoomMemberRepository;
 import com.rishi.classroom.repository.RoomRepository;
 import com.rishi.classroom.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
 public class MeetingServiceImpl implements MeetingService{
 
@@ -253,8 +251,7 @@ public class MeetingServiceImpl implements MeetingService{
 	    RoomMember roomMember =roomMemberRepository.findByRoomAndUser(room, user)
 	                    							.orElseThrow(() ->new RuntimeException("Not a room member"));
 
-	    if(roomMember.getRole() != RoomRole.OWNER)
-	    {
+	    if(roomMember.getRole() != RoomRole.OWNER){
 	        throw new RuntimeException("Only owner can perform this action");
 	    }
 
@@ -305,8 +302,7 @@ public class MeetingServiceImpl implements MeetingService{
 	}
 	
 	
-	private MeetingResponse mapToResponse(Meeting meeting)
-	{
+	private MeetingResponse mapToResponse(Meeting meeting){
 	    return MeetingResponse.builder()
 	            .id(meeting.getId())
 	            .roomId(meeting.getRoom().getId())
