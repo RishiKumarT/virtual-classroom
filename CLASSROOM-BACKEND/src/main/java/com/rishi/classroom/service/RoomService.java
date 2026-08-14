@@ -3,9 +3,9 @@ package com.rishi.classroom.service;
 import java.util.List;
 
 import com.rishi.classroom.dto.CreateRoomRequest;
-import com.rishi.classroom.dto.JoinRoomRequest;
 import com.rishi.classroom.dto.RoomResponse;
 import com.rishi.classroom.dto.UpdateRoomRequest;
+import com.rishi.classroom.dto.UserResponse;
 
 public interface RoomService {
 	
@@ -20,6 +20,8 @@ public interface RoomService {
 	String deleteRoom(Long roomId, Long userId);
 	
 	List<RoomResponse> getRoomsByUser(Long userId);
+	
+	List<UserResponse> getUsersByRoom(Long roomId);
 	
 	
 	

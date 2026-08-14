@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.rishi.classroom.dto.CreateRoomRequest;
 import com.rishi.classroom.dto.RoomResponse;
 import com.rishi.classroom.dto.UpdateRoomRequest;
+import com.rishi.classroom.dto.UserResponse;
 import com.rishi.classroom.model.Room;
 import com.rishi.classroom.model.RoomMember;
 import com.rishi.classroom.model.RoomRole;
@@ -174,6 +175,34 @@ public class RoomServiceImpl implements RoomService {
 		return responses;
 	}
 	
+	
+	@Override
+	public List<UserResponse> getUsersByRoom(Long RoomId) {
+		
+		Room room = roomRepository.findById(RoomId)
+							      .orElseThrow(()->new RuntimeException("Room not found"));
+		
+		List<RoomMember> roomMembers = roomMemberRepository.findByRoom(room);
+
+	    List<UserResponse> users = new ArrayList<>();
+
+	    for (RoomMember roomMember : roomMembers) {
+	        User user = roomMember.getUser();
+
+	        
+
+	        users.add(UserResponse.builder()
+	 			   .id(user.getId())
+				   .name(user.getName())
+				   .email(user.getEmail())
+				   .profilePic(user.getProfilepicture())
+				   .build());
+	    }
+
+	    return users;
+	}
+	
+	
 	private RoomResponse mapToResponse(Room room) {
 		
 		return RoomResponse.builder()
@@ -186,6 +215,11 @@ public class RoomServiceImpl implements RoomService {
 				           .ownerId(room.getOwner().getId())
 					       .build();
 	}
+
+
+
+
+	
 
 
 }
