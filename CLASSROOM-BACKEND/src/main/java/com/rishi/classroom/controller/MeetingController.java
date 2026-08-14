@@ -27,7 +27,7 @@ public class MeetingController {
 	@Autowired
 	private MeetingService meetingService;
 	
-	@PostMapping("/rooms/{roomId}/meetings")
+	@PostMapping("/rooms/{roomId}/meetings/create")
 	public ResponseEntity<MeetingResponse> createMeeting(@PathVariable Long roomId, @RequestParam Long userId, @RequestBody CreateMeetingRequest request){
 		
 	    return ResponseEntity.ok(meetingService.createMeeting(roomId, userId, request));
@@ -50,14 +50,14 @@ public class MeetingController {
 	}
 	
 	
-	@PutMapping("/meetings/{meetingId}")
+	@PutMapping("/meetings/{meetingId}/update")
 	public ResponseEntity<?> updateMeeting(@PathVariable Long meetingId, @RequestParam Long userId, @RequestBody UpdateMeetingRequest request){
 		
 	    return ResponseEntity.ok(meetingService.updateMeeting(meetingId, userId, request));
 	
 	}
 	
-	@DeleteMapping("/meetings/{meetingId}")
+	@DeleteMapping("/meetings/{meetingId}/delete")
 	public ResponseEntity<?> deleteMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
 		
 	    meetingService.deleteMeeting(meetingId, userId);
@@ -89,8 +89,7 @@ public class MeetingController {
 	}
 	
 	@PutMapping("/meetings/{meetingId}/cancel")
-	public ResponseEntity<MeetingResponse> cancelMeeting(@PathVariable Long meetingId, @RequestParam Long userId)
-	{
+	public ResponseEntity<MeetingResponse> cancelMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
 	    return ResponseEntity.ok(meetingService.cancelMeeting(meetingId,userId));
 	}
 }
