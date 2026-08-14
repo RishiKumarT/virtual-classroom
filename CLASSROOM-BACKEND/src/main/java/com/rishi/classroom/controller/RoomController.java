@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rishi.classroom.dto.CreateRoomRequest;
-//import com.rishi.classroom.dto.JoinRoomRequest;
 import com.rishi.classroom.dto.RoomResponse;
 import com.rishi.classroom.dto.UpdateRoomRequest;
+import com.rishi.classroom.dto.UserResponse;
 import com.rishi.classroom.service.RoomService;
 
 @RestController
@@ -56,4 +56,9 @@ public class RoomController {
     public ResponseEntity<List<RoomResponse>> getRoomsByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(roomService.getRoomsByUser(userId));
     }
+    
+    @GetMapping("/{id}/users")
+	public ResponseEntity<List<UserResponse>> getUsersByRoomId(@PathVariable Long id) throws Exception {
+		return ResponseEntity.ok(roomService.getUsersByRoom(id));
+	}
 }
