@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
 import com.rishi.classroom.service.MeetingParticipantService;
@@ -22,12 +23,17 @@ import com.rishi.classroom.service.MeetingParticipantService;
 public class MeetingParticipantController {
 	
 	@Autowired
-    private MeetingParticipantService meetingParticipantService;
+    private MeetingParticipantService meetingParticipantService;	
 
-    @PostMapping("/{meetingId}/join")
-    public ResponseEntity<MeetingParticipantResponse> joinMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
-        return ResponseEntity.ok(meetingParticipantService.joinMeeting(meetingId, userId));
-    }
+	@PostMapping("/{meetingId}/join")
+	public ResponseEntity<JoinMeetingResponse> joinMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
+	    return ResponseEntity.ok(meetingParticipantService.joinMeeting(meetingId, userId));
+	}
+	
+	@PostMapping("/{meetingId}/connected")
+	public ResponseEntity<MeetingParticipantResponse> connectedToMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
+	    return ResponseEntity.ok(meetingParticipantService.connectedToMeeting(meetingId, userId));
+	}
 
     @PutMapping("/{meetingId}/leave")
     public ResponseEntity<MeetingParticipantResponse> leaveMeeting(@PathVariable Long meetingId, @RequestParam Long userId){
