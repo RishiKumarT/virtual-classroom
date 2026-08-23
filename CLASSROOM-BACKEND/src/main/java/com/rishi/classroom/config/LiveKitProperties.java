@@ -12,6 +12,8 @@ public class LiveKitProperties {
 
     private String url;
 
+    private String apiUrl;
+    
     private String apiKey;
 
     private String apiSecret;

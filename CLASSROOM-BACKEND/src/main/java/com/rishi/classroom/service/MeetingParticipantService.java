@@ -5,6 +5,7 @@ import java.util.List;
 import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
+import com.rishi.classroom.dto.Meeting.ParticipantAudioResponse;
 
 public interface MeetingParticipantService {
 	
@@ -23,4 +24,8 @@ public interface MeetingParticipantService {
     
     // for kicking a participant from a meeting
     void kickParticipant(Long meetingId, Long ownerId, Long participantUserId);
+   
+    // mute and unmute participants
+    ParticipantAudioResponse muteParticipantAudio(Long meetingId, Long ownerId, Long participantUserId);
+
 }

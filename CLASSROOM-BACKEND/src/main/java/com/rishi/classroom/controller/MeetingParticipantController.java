@@ -66,6 +66,12 @@ public class MeetingParticipantController {
     	meetingParticipantService.kickParticipant(meetingId, userId, participantUserId);
 
         return ResponseEntity.ok("Participant removed successfully");
+    }
+    
+    @PutMapping("/{meetingId}/participants/{participantUserId}/mute-audio")
+    public ResponseEntity<?> muteParticipantAudio(@PathVariable Long meetingId, @PathVariable Long participantUserId, @RequestParam Long userId) {
+        
+    	return ResponseEntity.ok(meetingParticipantService.muteParticipantAudio(meetingId, userId, participantUserId));
     
     }
 }

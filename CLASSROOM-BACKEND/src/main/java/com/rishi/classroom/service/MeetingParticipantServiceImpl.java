@@ -12,6 +12,7 @@ import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantEvent;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
+import com.rishi.classroom.dto.Meeting.ParticipantAudioResponse;
 import com.rishi.classroom.model.Meeting;
 import com.rishi.classroom.model.MeetingParticipant;
 import com.rishi.classroom.model.MeetingStatus;
@@ -215,6 +216,84 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	    broadcastParticipantEvent(ParticipantEventType.KICKED, meeting, participantUser);
 	}
 	
+	
+	@Override
+	public ParticipantAudioResponse muteParticipantAudio(Long meetingId, Long ownerId, Long participantUserId) {
+		
+		Meeting meeting = meetingRepository.findById(meetingId)
+									       .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+	    User owner = userRepository.findById(ownerId)
+	            				   .orElseThrow(() ->new RuntimeException("Owner not found"));
+
+	    User participantUser = userRepository.findById(participantUserId)
+	                                         .orElseThrow(() ->new RuntimeException("Participant not found"));
+
+	    validateOwner(meeting.getRoom(), owner);
+
+	    if (meeting.getStatus() != MeetingStatus.LIVE) {
+	        throw new RuntimeException("Meeting is not live");
+	    }
+
+	    if (owner.getId().equals(participantUser.getId())) {
+	        throw new RuntimeException(
+	                "Owner cannot mute themselves using this operation");
+	    }
+
+	    MeetingParticipant participant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, participantUser)
+	                    											 .orElseThrow(() ->new RuntimeException("User is not in meeting"));
+	    
+	    if (participant.getLeftTime() != null) {
+	        throw new RuntimeException("User is not currently in meeting");
+	    }
+
+	    String roomName = "meeting-" + meeting.getId();
+
+	    String participantIdentity = participantUser.getId().toString();
+
+	    liveKitService.muteParticipantAudio(roomName, participantIdentity);
+
+	    return ParticipantAudioResponse.builder()
+	    							   .meetingId(meetingId)
+						               .userId(participantUserId)
+						               .muted(true)
+						               .message("Participant microphone muted")
+						               .build();
+	}
+	
+	private void broadcastParticipantEvent(ParticipantEventType type, Meeting meeting, User user){
+	    MeetingParticipantEvent event = MeetingParticipantEvent.builder()
+	                    									   .type(type)
+	                    									   .meetingId(meeting.getId())
+	                    									   .userId(user.getId())
+	                    									   .userName(user.getName())
+	                    									   .build();
+
+	    messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId()+"/participant-events",event);
+	}
+	
+	private RoomMember validateMember(Room room, User user){
+	    RoomMember roomMember = roomMemberRepository.findByRoomAndUser(room, user)
+	    										    .orElseThrow(() ->new RuntimeException("Not a room member"));
+
+	    if(roomMember.isBlocked()){
+	        throw new RuntimeException("You are blocked from this room");
+	    }
+
+	    return roomMember;
+	}
+
+	private RoomMember validateOwner(Room room, User user){
+	    RoomMember roomMember = roomMemberRepository.findByRoomAndUser(room, user)
+	                    							.orElseThrow(() ->new RuntimeException("Not a room member"));
+
+	    if(roomMember.getRole() != RoomRole.OWNER){
+	        throw new RuntimeException("Only owner can perform this action");
+	    }
+
+	    return roomMember;
+	}
+
 	private AttendanceResponse mapToAttendanceResponse(MeetingParticipant participant){
 	    
 		Long durationMinutes = null;
@@ -242,41 +321,6 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	    								  .joinedTime(participant.getJoinedTime())
 	    								  .leftTime(participant.getLeftTime())
 	    								  .build();
-	}
-	
-	private RoomMember validateMember(Room room, User user){
-	    RoomMember roomMember = roomMemberRepository.findByRoomAndUser(room, user)
-	    										    .orElseThrow(() ->new RuntimeException("Not a room member"));
-
-	    if(roomMember.isBlocked()){
-	        throw new RuntimeException("You are blocked from this room");
-	    }
-
-	    return roomMember;
-	}
-
-	private RoomMember validateOwner(Room room,User user){
-	    RoomMember roomMember = roomMemberRepository.findByRoomAndUser(room, user)
-	                    							.orElseThrow(() ->new RuntimeException("Not a room member"));
-
-	    if(roomMember.getRole() != RoomRole.OWNER){
-	        throw new RuntimeException(
-	                "Only owner can perform this action");
-	    }
-
-	    return roomMember;
-	}
-
-	
-	private void broadcastParticipantEvent(ParticipantEventType type, Meeting meeting, User user){
-	    MeetingParticipantEvent event = MeetingParticipantEvent.builder()
-	                    									   .type(type)
-	                    									   .meetingId(meeting.getId())
-	                    									   .userId(user.getId())
-	                    									   .userName(user.getName())
-	                    									   .build();
-
-	    messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId()+"/participant-events",event);
 	}
 	
 	
