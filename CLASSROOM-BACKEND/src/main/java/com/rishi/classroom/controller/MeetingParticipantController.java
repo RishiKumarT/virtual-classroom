@@ -1,6 +1,7 @@
 package com.rishi.classroom.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -72,6 +73,21 @@ public class MeetingParticipantController {
     public ResponseEntity<?> muteParticipantAudio(@PathVariable Long meetingId, @PathVariable Long participantUserId, @RequestParam Long userId) {
         
     	return ResponseEntity.ok(meetingParticipantService.muteParticipantAudio(meetingId, userId, participantUserId));
+ 
+    }
     
+    @PutMapping("/{meetingId}/participants/{participantUserId}/disable-video")
+    public ResponseEntity<?> disableParticipantVideo(@PathVariable Long meetingId, @PathVariable Long participantUserId, @RequestParam Long userId) {
+
+        return ResponseEntity.ok(meetingParticipantService.disableParticipantVideo(meetingId, userId, participantUserId));
+    }
+    
+    @PutMapping(
+            "/{meetingId}/participants/disable-all-video")
+    public ResponseEntity<?> disableAllParticipantVideos(@PathVariable Long meetingId, @RequestParam Long userId) {
+
+        int count = meetingParticipantService.disableAllParticipantVideos(meetingId, userId);
+
+        return ResponseEntity.ok(Map.of("meetingId", meetingId, "affectedParticipants", count,"message", "All participant cameras disabled"));
     }
 }
