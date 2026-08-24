@@ -6,6 +6,7 @@ import com.rishi.classroom.dto.LiveKit.JoinMeetingResponse;
 import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
 import com.rishi.classroom.dto.Meeting.ParticipantAudioResponse;
+import com.rishi.classroom.dto.Meeting.ParticipantVideoResponse;
 
 public interface MeetingParticipantService {
 	
@@ -27,5 +28,10 @@ public interface MeetingParticipantService {
    
     // mute and unmute participants
     ParticipantAudioResponse muteParticipantAudio(Long meetingId, Long ownerId, Long participantUserId);
+    
+    // disable single and all participants video 
+    ParticipantVideoResponse disableParticipantVideo(Long meetingId, Long ownerId, Long participantUserId);
+    
+    int disableAllParticipantVideos(Long meetingId, Long ownerId);
 
 }

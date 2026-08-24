@@ -13,6 +13,7 @@ import com.rishi.classroom.dto.Meeting.AttendanceResponse;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantEvent;
 import com.rishi.classroom.dto.Meeting.MeetingParticipantResponse;
 import com.rishi.classroom.dto.Meeting.ParticipantAudioResponse;
+import com.rishi.classroom.dto.Meeting.ParticipantVideoResponse;
 import com.rishi.classroom.model.Meeting;
 import com.rishi.classroom.model.MeetingParticipant;
 import com.rishi.classroom.model.MeetingStatus;
@@ -260,6 +261,73 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 						               .message("Participant microphone muted")
 						               .build();
 	}
+	
+	@Override
+	public ParticipantVideoResponse disableParticipantVideo(Long meetingId, Long ownerId, Long participantUserId) {
+		
+		Meeting meeting = meetingRepository.findById(meetingId)
+			       						   .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+		User owner = userRepository.findById(ownerId)
+				   				   .orElseThrow(() ->new RuntimeException("Owner not found"));
+		
+		User participantUser = userRepository.findById(participantUserId)
+		                                     .orElseThrow(() ->new RuntimeException("Participant not found"));
+		
+		validateOwner(meeting.getRoom(), owner);
+		
+		if (meeting.getStatus() != MeetingStatus.LIVE) {
+			throw new RuntimeException("Meeting is not live");
+		}
+		
+		if (owner.getId().equals(participantUser.getId())) {
+			throw new RuntimeException("Owner cannot mute themselves using this operation");
+		}
+		
+		MeetingParticipant participant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, participantUser)
+													 .orElseThrow(() ->new RuntimeException("User is not in meeting"));
+		
+		if (participant.getLeftTime() != null) {
+			throw new RuntimeException("User is not currently in meeting");
+		}
+		
+		String roomName = "meeting-" + meeting.getId();
+		
+		String participantIdentity = participantUser.getId().toString();
+		
+		liveKitService.disableParticipantVideo(roomName, participantIdentity);
+		
+		return ParticipantVideoResponse.builder()
+									   .meetingId(meetingId)
+									   .userId(participantUserId)
+									   .disabled(true)
+									   .message("Participant video disabled")
+									   .build();
+	}
+	
+	
+	@Override
+	public int disableAllParticipantVideos(Long meetingId, Long ownerId) {
+
+	    Meeting meeting = meetingRepository.findById(meetingId)
+	                    				   .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+	    User owner =userRepository.findById(ownerId)
+	                    		  .orElseThrow(() ->new RuntimeException("Owner not found"));
+
+	    validateOwner(meeting.getRoom(), owner);
+
+	    if (meeting.getStatus() != MeetingStatus.LIVE) {
+	        throw new RuntimeException("Meeting is not live");
+	    }
+
+	    String roomName = "meeting-" + meeting.getId();
+
+	    String ownerIdentity = owner.getId().toString();
+
+	    return liveKitService.disableAllParticipantVideos(roomName, ownerIdentity);
+	}
+	
 	
 	private void broadcastParticipantEvent(ParticipantEventType type, Meeting meeting, User user){
 	    MeetingParticipantEvent event = MeetingParticipantEvent.builder()
