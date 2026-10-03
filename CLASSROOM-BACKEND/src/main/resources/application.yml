@@ -2,4 +2,4 @@ livekit:
   url: ws://localhost:7880
   api-url: http://localhost:7880
   api-key: devkey
-  api-secret: secret
+  api-secret: my-local-livekit-secret-1234567890
