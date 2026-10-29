@@ -16,6 +16,10 @@ import com.rishi.classroom.repository.MeetingParticipantRepository;
 import com.rishi.classroom.repository.MeetingRepository;
 import com.rishi.classroom.repository.UserRepository;
 
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+
 @Service
 public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttendanceService {
 
@@ -33,7 +37,7 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
 
 
     @Override
-    public void handleParticipantJoined(String roomName, String participantIdentity) {
+    public void handleParticipantJoined(String roomName, String participantIdentity, LocalDateTime eventTime) {
 
         Long meetingId = extractMeetingId(roomName);
         Long userId = parseUserId(participantIdentity);
@@ -46,8 +50,17 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
 
         Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user);
 
-        if (latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null) {
-            return;
+        if (latestParticipant.isPresent()) {
+        	MeetingParticipant latest =  latestParticipant.get();
+        	
+        	// A duplicate or delayed join must not reopen an old session
+        	if(!eventTime.isAfter(latest.getJoinedTime()))return;
+        	
+        	// A newer session is already active
+        	if(latest.getLeftTime()==null)return;
+        	
+        	// Ignore a join event that occurred before the previous session ended
+        	if(!eventTime.isAfter(latest.getLeftTime()))return;
         }
 
         MeetingParticipant participant = MeetingParticipant.builder()
@@ -64,7 +77,7 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
 
 
     @Override
-    public void handleParticipantLeft(String roomName, String participantIdentity) {
+    public void handleParticipantLeft(String roomName, String participantIdentity, LocalDateTime eventTime) {
 
         Long meetingId = extractMeetingId(roomName);
         Long userId = parseUserId(participantIdentity);
@@ -83,11 +96,19 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
 
         MeetingParticipant participant = latestParticipant.get();
 
+     // Ignore a leave event that predates this attendance session.
+        if (eventTime.isBefore(participant.getJoinedTime())) {
+            return;
+        }
+        
+        
+     // This session has already ended.
         if (participant.getLeftTime() != null) {
             return;
         }
-
-        participant.setLeftTime(LocalDateTime.now());
+        
+     // Use LiveKit's event time, not webhook processing time.
+        participant.setLeftTime(eventTime);
 
         meetingParticipantRepository.save(participant);
 
@@ -139,7 +160,22 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
 									                          .userId(user.getId())
 									                          .userName(user.getName())
 									                          .build();
-
-        messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId() + "/participant-events", event);
+        String destination = "/topic/meeting/" + meeting.getId() + "/participant-events";
+        
+        Runnable broadcast=()->messagingTemplate.convertAndSend(destination, event);
+        
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            broadcast.run();
+                        }
+                    }
+            );
+        } else {
+            broadcast.run();
+        }
+        
+//        messagingTemplate.convertAndSend("/topic/meeting/"+ meeting.getId() + "/participant-events", event);
     }
 }

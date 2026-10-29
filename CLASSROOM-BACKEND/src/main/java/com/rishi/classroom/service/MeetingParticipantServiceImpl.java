@@ -69,38 +69,42 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	
 	
 	
-	@Override 
-	public MeetingParticipantResponse connectedToMeeting(Long meetingId, Long userId) {
-		
-		Meeting meeting = meetingRepository.findById(meetingId) 
-										   .orElseThrow(() ->new RuntimeException("Meeting not found"));
-		
-		User user =userRepository.findById(userId) 
-								 .orElseThrow(() ->new RuntimeException("User not found")); 
-		
-		validateMember(meeting.getRoom(),user);
-		
-		if (meeting.getStatus() != MeetingStatus.LIVE){
-			throw new RuntimeException("Meeting is not live");
-		}
-		
-		Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user); 
-		
-		if (latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null){
-			throw new RuntimeException("User is already connected to the meeting");
-		}
-		
-		MeetingParticipant participant =MeetingParticipant.builder() 
-													   	  .meeting(meeting)
-														  .user(user) 
-														  .joinedTime(LocalDateTime.now())
-														  .leftTime(null) 
-														  .build();
-		meetingParticipantRepository.save(participant);
-		
-		broadcastParticipantEvent(ParticipantEventType.JOINED, meeting, user);
-		
-		return mapToParticipantResponse(participant);
+	@Override
+	public MeetingParticipantResponse connectedToMeeting(Long meetingId,Long userId){
+
+	    Meeting meeting = meetingRepository.findById(meetingId)
+	            						   .orElseThrow(() ->new RuntimeException("Meeting not found"));
+
+	    User user = userRepository.findById(userId)
+	            				  .orElseThrow(() ->new RuntimeException("User not found"));
+
+	    validateMember(meeting.getRoom(), user);
+
+	    if (meeting.getStatus() != MeetingStatus.LIVE) {
+	        throw new RuntimeException("Meeting is not live");
+	    }
+
+	    Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting,user);
+
+	    if (latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null) {
+
+	        // Already connected.
+	        // Do not create another attendance row.
+	        return mapToParticipantResponse(latestParticipant.get());
+	    }
+
+	    MeetingParticipant participant = MeetingParticipant.builder()
+	                    								   .meeting(meeting)
+ 									                       .user(user)
+									                       .joinedTime(LocalDateTime.now())
+									                       .leftTime(null)
+									                       .build();
+
+	    meetingParticipantRepository.save(participant);
+
+	    broadcastParticipantEvent(ParticipantEventType.JOINED,meeting,user);
+	    
+	    return mapToParticipantResponse(participant);
 	}
 	
 	
@@ -117,8 +121,10 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	                    										     .orElseThrow(() -> new RuntimeException("User is not in meeting"));
 
 	    if(participant.getLeftTime()!= null){
-	        throw new RuntimeException(
-	                "User already left meeting");
+	    	// Already left.
+	        // Do not update the database again.
+	        // Do not broadcast another LEFT event.
+	        return mapToResponse(participant);
 	    }
 
 	    participant.setLeftTime(LocalDateTime.now());
