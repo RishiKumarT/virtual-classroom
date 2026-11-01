@@ -83,28 +83,12 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	    if (meeting.getStatus() != MeetingStatus.LIVE) {
 	        throw new RuntimeException("Meeting is not live");
 	    }
-
-	    Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting,user);
-
-	    if (latestParticipant.isPresent() && latestParticipant.get().getLeftTime() == null) {
-
-	        // Already connected.
-	        // Do not create another attendance row.
-	        return mapToParticipantResponse(latestParticipant.get());
-	    }
-
-	    MeetingParticipant participant = MeetingParticipant.builder()
-	                    								   .meeting(meeting)
- 									                       .user(user)
-									                       .joinedTime(LocalDateTime.now())
-									                       .leftTime(null)
-									                       .build();
-
-	    meetingParticipantRepository.save(participant);
-
-	    broadcastParticipantEvent(ParticipantEventType.JOINED,meeting,user);
 	    
-	    return mapToParticipantResponse(participant);
+	    return meetingParticipantRepository
+	            .findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user)
+	            .map(this::mapToParticipantResponse)
+	            .orElseThrow(() -> new RuntimeException(
+	                    "Attendance has not yet been recorded by LiveKit"));
 	}
 	
 	
@@ -116,25 +100,14 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 
 	    User user = userRepository.findById(userId)
 	    						  .orElseThrow(() ->new RuntimeException("User not found"));
-
-	    MeetingParticipant participant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting,user)
-	                    										     .orElseThrow(() -> new RuntimeException("User is not in meeting"));
-
-	    if(participant.getLeftTime()!= null){
-	    	// Already left.
-	        // Do not update the database again.
-	        // Do not broadcast another LEFT event.
-	        return mapToResponse(participant);
-	    }
-
-	    participant.setLeftTime(LocalDateTime.now());
-
-	    meetingParticipantRepository.save(participant);
 	    
-	    broadcastParticipantEvent(ParticipantEventType.LEFT, meeting, user);
+	    validateMember(meeting.getRoom(), user);
+	    return meetingParticipantRepository
+	            .findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user)
+	            .map(this::mapToParticipantResponse)
+	            .orElseThrow(() -> new RuntimeException(
+	                    "Attendance record not found"));
 
-	    return mapToResponse(participant);
-	    
 	}
 	
 	

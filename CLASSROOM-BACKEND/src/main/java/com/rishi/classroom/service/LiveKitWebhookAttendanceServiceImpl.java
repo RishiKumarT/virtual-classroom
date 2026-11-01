@@ -66,12 +66,14 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
         MeetingParticipant participant = MeetingParticipant.builder()
 								                           .meeting(meeting)
 								                           .user(user)
-								                           .joinedTime(LocalDateTime.now())
+								                           .joinedTime(eventTime)
 								                           .leftTime(null)
 								                           .build();
 
         meetingParticipantRepository.save(participant);
-
+        
+        System.out.println("webhook for join function called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        
         broadcastParticipantEvent(ParticipantEventType.JOINED,meeting, user);
     }
 
@@ -89,18 +91,15 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
                 				  .orElseThrow(() ->new RuntimeException("User not found for webhook"));
 
         Optional<MeetingParticipant> latestParticipant = meetingParticipantRepository.findTopByMeetingAndUserOrderByJoinedTimeDesc(meeting, user);
-
         if (latestParticipant.isEmpty()) {
             return;
         }
-
         MeetingParticipant participant = latestParticipant.get();
 
      // Ignore a leave event that predates this attendance session.
         if (eventTime.isBefore(participant.getJoinedTime())) {
             return;
         }
-        
         
      // This session has already ended.
         if (participant.getLeftTime() != null) {
@@ -111,7 +110,8 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
         participant.setLeftTime(eventTime);
 
         meetingParticipantRepository.save(participant);
-
+        
+        
         broadcastParticipantEvent(ParticipantEventType.LEFT, meeting, user);
     }
 
