@@ -66,13 +66,11 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
         MeetingParticipant participant = MeetingParticipant.builder()
 								                           .meeting(meeting)
 								                           .user(user)
-								                           .joinedTime(eventTime)
+								                           .joinedTime(eventTime) //changed from LocalTime.now() to eventTime
 								                           .leftTime(null)
 								                           .build();
 
         meetingParticipantRepository.save(participant);
-        
-        System.out.println("webhook for join function called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         
         broadcastParticipantEvent(ParticipantEventType.JOINED,meeting, user);
     }
@@ -107,7 +105,7 @@ public class LiveKitWebhookAttendanceServiceImpl implements LiveKitWebhookAttend
         }
         
      // Use LiveKit's event time, not webhook processing time.
-        participant.setLeftTime(eventTime);
+        participant.setLeftTime(eventTime); // changed from LocalTime.now() to eventTime
 
         meetingParticipantRepository.save(participant);
         
